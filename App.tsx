@@ -1,20 +1,28 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import LoginScreen from './Screen/LoginScreen';  // Import LoginScreen
+import SignupScreen from './Screen/SignupScreen'; // Import SignupScreen
+import MapScreen from './Screen/MapScreen'; // Import MapScreen
+import HomeScreen from "./Screen/HomeScreen";
+import ReserveBikeScreen from "./Screen/ReserveBikeScreen";
+import RentalHistoryScreen from "./Screen/RentalHistoryScreen"; // Import ReserveBike
 
-export default function App() {
+const Stack = createStackNavigator();
+
+const App = () => {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Login">
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Signup" component={SignupScreen} />
+          <Stack.Screen name="Map" component={MapScreen} />
+          <Stack.Screen name="Reserve" component={ReserveBikeScreen} />
+          <Stack.Screen name="RentalHistory" component={RentalHistoryScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App;
