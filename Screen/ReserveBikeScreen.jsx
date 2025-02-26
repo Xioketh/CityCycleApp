@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Button, Text, FlatList, StyleSheet, Image } from 'react-native';
-import { collection, getDocs, getFirestore } from "firebase/firestore";
+import {View, Button, Text, FlatList, StyleSheet, Image, ActivityIndicator} from 'react-native';
+import { collection, getDocs, getFirestore, doc, updateDoc, addDoc } from "firebase/firestore";
+import Toast from "react-native-toast-message";
 
 const db = getFirestore(); // Initialize Firestore
 
@@ -10,35 +11,59 @@ const ReserveBikeScreen = () => {
     const [reservedBike, setReservedBike] = useState(null);
 
     useEffect(() => {
-        const fetchBikes = async () => {
-            try {
-                console.log("Fetching bikes from Firestore...");
-                const querySnapshot = await getDocs(collection(db, "bikes"));
-                const bikeList = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-
-                setBikes(bikeList);
-                console.log("Bikes fetched successfully!");
-            } catch (error) {
-                console.error("Error fetching bikes:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchBikes();
     }, []);
 
-    // Log when `bikes` state updates
-    useEffect(() => {
-        console.log("Updated bikes list:", bikes);
-    }, [bikes]);
+    const fetchBikes = async () => {
+        try {
+            console.log("Fetching bikes from Firestore...");
+            const querySnapshot = await getDocs(collection(db, "bikes"));
+            const bikeList = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
 
-    const handleReserve = (bikeId) => {
-        setReservedBike(bikeId);
-        console.log(`Bike with ID ${bikeId} reserved!`);
+            setBikes(bikeList);
+            console.log("Bikes fetched successfully!");
+        } catch (error) {
+            console.error("Error fetching bikes:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReserve = async (bikeId) => {
+        try {
+            // Reference to the bike document
+            const bikeRef = doc(db, "bikes", bikeId);
+
+            // Update Firestore document
+            await updateDoc(bikeRef, {
+                status: false,
+                reserved_user_id: "4VH3D18L6VVZBcezkIaTKmlqk543"
+            });
+
+            await addDoc(collection(db,"rental_history"),{
+                bike_id:bikeId,
+                from: new Date().toISOString().split("T").join(" ").slice(0, 19),
+                status: 0,
+                to:null,
+                user_id: "4VH3D18L6VVZBcezkIaTKmlqk543",
+            })
+
+            // Set reserved bike state
+            setReservedBike(bikeId);
+            console.log(`Bike with ID ${bikeId} reserved!`);
+            alert('Reserved Bike!')
+            // Toast.show({
+            //     type: 'success',
+            //     text1: 'Bike Reserved!',
+            //     text2: `Bike has  been reserved successfully.`,
+            // });
+            fetchBikes();
+        } catch (error) {
+            console.error("Error reserving bike:", error);
+        }
     };
 
     const renderBikeItem = ({ item }) => (
@@ -47,20 +72,24 @@ const ReserveBikeScreen = () => {
                 source={{ uri: item.image }}
                 style={styles.bikeImage}
             />
-            <View style={styles.bikeDetails}> {/* New container for details */}
-                <Text style={styles.bikeBrand}>{item.brand_name}</Text> {/* Style the brand */}
-                <Text>{item.location}</Text> {/* Add location */}
-                <Text>Status: {item.status  ? "Available" : "Reserved"}</Text> {/* Display status */}
+            <View style={styles.bikeDetails}>
+                <Text style={styles.bikeBrand}>{item.brand_name}</Text>
+                <Text>{item.location}</Text>
+                <Text>Per Day: Rs.{item.rental}</Text>
+                <Text>Status: {item.status  ? "Available" : "Reserved"}</Text>
             </View>
             <Button
                 title={item.status ? "Reserve" : "Reserved"} // More descriptive button text
-                onPress={() => handleReserve(item.id)}
+                onPress={() => handleReserve(item.id, item.rental)}
                 disabled={!item.status} // Disable if reserved
             />
         </View>
     );
 
-    if (loading) return <Text>Loading bikes...</Text>;
+    if (loading) {
+        return <ActivityIndicator size="large" color="#0000ff"/>;
+    }
+
     if (!bikes.length) return <Text>No bikes available.</Text>;
 
     return (
