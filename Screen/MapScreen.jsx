@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+// import MapView, { Marker } from 'react-native-maps';
 
 const MapScreen = () => {
     const bikeStations = [
@@ -10,16 +10,17 @@ const MapScreen = () => {
 
     return (
         <View style={styles.container}>
-            <MapView style={styles.map} initialRegion={{
-                latitude: 37.7749,
-                longitude: -122.4194,
-                latitudeDelta: 0.0922,
-                longitudeDelta: 0.0421,
-            }}>
-                {bikeStations.map(station => (
-                    <Marker key={station.id} coordinate={{ latitude: station.latitude, longitude: station.longitude }} title={station.name} />
-                ))}
-            </MapView>
+            <text>Test</text>
+            {/*<MapView style={styles.map} initialRegion={{*/}
+            {/*    latitude: 37.7749,*/}
+            {/*    longitude: -122.4194,*/}
+            {/*    latitudeDelta: 0.0922,*/}
+            {/*    longitudeDelta: 0.0421,*/}
+            {/*}}>*/}
+            {/*    {bikeStations.map(station => (*/}
+            {/*        <Marker key={station.id} coordinate={{ latitude: station.latitude, longitude: station.longitude }} title={station.name} />*/}
+            {/*    ))}*/}
+            {/*</MapView>*/}
         </View>
     );
 };
