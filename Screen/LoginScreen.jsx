@@ -26,6 +26,7 @@ const LoginScreen = ({ navigation }) => {
                 await AsyncStorage.setItem('userId', userData.userId);
                 await AsyncStorage.setItem('userName', userData.name);
                 await AsyncStorage.setItem('userPhone', userData.phone);
+                await AsyncStorage.setItem('role', userData.role);
             }
 
             navigation.navigate('Home');

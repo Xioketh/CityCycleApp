@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {View, Button, Text, FlatList, StyleSheet, Image, ActivityIndicator} from 'react-native';
 import { collection, getDocs, getFirestore, doc, updateDoc, addDoc } from "firebase/firestore";
-import Toast from "react-native-toast-message";
+import asyncStorage from "@react-native-async-storage/async-storage/src/AsyncStorage";
+// import Toast from "react-native-toast-message";
 
 const db = getFirestore(); // Initialize Firestore
 
@@ -9,6 +10,8 @@ const ReserveBikeScreen = () => {
     const [bikes, setBikes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [reservedBike, setReservedBike] = useState(null);
+    let [user_role, setUser_role] = useState(null);
+
 
     useEffect(() => {
         fetchBikes();
@@ -16,6 +19,9 @@ const ReserveBikeScreen = () => {
 
     const fetchBikes = async () => {
         try {
+            user_role = await asyncStorage.getItem('role')
+
+            console.log('user_role:: '+user_role)
             console.log("Fetching bikes from Firestore...");
             const querySnapshot = await getDocs(collection(db, "bikes"));
             const bikeList = querySnapshot.docs.map(doc => ({
@@ -37,10 +43,11 @@ const ReserveBikeScreen = () => {
             // Reference to the bike document
             const bikeRef = doc(db, "bikes", bikeId);
 
+            const user_id = await asyncStorage.getItem('userId')
             // Update Firestore document
             await updateDoc(bikeRef, {
                 status: false,
-                reserved_user_id: "4VH3D18L6VVZBcezkIaTKmlqk543"
+                reserved_user_id: user_id
             });
 
             await addDoc(collection(db,"rental_history"),{
@@ -48,7 +55,7 @@ const ReserveBikeScreen = () => {
                 from: new Date().toISOString().split("T").join(" ").slice(0, 19),
                 status: 0,
                 to:null,
-                user_id: "4VH3D18L6VVZBcezkIaTKmlqk543",
+                user_id: user_id,
             })
 
             // Set reserved bike state
@@ -78,11 +85,16 @@ const ReserveBikeScreen = () => {
                 <Text>Per Day: Rs.{item.rental}</Text>
                 <Text>Status: {item.status  ? "Available" : "Reserved"}</Text>
             </View>
-            <Button
-                title={item.status ? "Reserve" : "Reserved"} // More descriptive button text
-                onPress={() => handleReserve(item.id, item.rental)}
-                disabled={!item.status} // Disable if reserved
-            />
+
+            {user_role === 'user' ? (
+                <Button
+                    title={item.status ? "Reserve" : "Reserved"} // More descriptive button text
+                    onPress={() => handleReserve(item.id, item.rental)}
+                    disabled={!item.status} // Disable if reserved
+                />
+            ):null}
+
+
         </View>
     );
 

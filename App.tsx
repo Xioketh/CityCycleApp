@@ -7,14 +7,15 @@ import MapScreen from './Screen/MapScreen'; // Import MapScreen
 import HomeScreen from "./Screen/HomeScreen";
 import ReserveBikeScreen from "./Screen/ReserveBikeScreen";
 import RentalHistoryScreen from "./Screen/RentalHistoryScreen";
-import PersonalInfoScreen from "./Screen/PersonalInfoScreen"; // Import ReserveBike
+import PersonalInfoScreen from "./Screen/PersonalInfoScreen";
+import AddBikeScreen from "./Screen/AddBikeScreen"; // Import ReserveBike
 
 const Stack = createStackNavigator();
 
 const App = () => {
   return (
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="RentalHistory">
+        <Stack.Navigator initialRouteName="Home">
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Signup" component={SignupScreen} />
@@ -22,6 +23,7 @@ const App = () => {
           <Stack.Screen name="Reserve" component={ReserveBikeScreen} />
           <Stack.Screen name="RentalHistory" component={RentalHistoryScreen} />
           <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
+          <Stack.Screen name="Add-Bike" component={AddBikeScreen} />
         </Stack.Navigator>
       </NavigationContainer>
   );

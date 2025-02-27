@@ -1,47 +1,81 @@
 import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Image} from 'react-native';
-import {getFirestore, collection, getDocs, query, where, doc, getDoc} from 'firebase/firestore';
+import {getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc} from 'firebase/firestore';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 const db = getFirestore();
 
 const RentalHistoryScreen = () => {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
-    const userId = "4VH3D18L6VVZBcezkIaTKmlqk543"; // Your target user ID
 
     useEffect(() => {
-        const fetchHistoryWithBikeDetails = async () => {
-            try {
-                const q = query(collection(db, "rental_history"), where("user_id", "==", userId));
-                const querySnapshot = await getDocs(q);
-
-                const rentalHistory = await Promise.all(
-                    querySnapshot.docs.map(async (docSnapshot) => {
-                        const rentalData = docSnapshot.data();
-                        const bikeRef = doc(db, "bikes", rentalData.bike_id);
-                        const bikeSnapshot = await getDoc(bikeRef);
-
-                        return {
-                            id: docSnapshot.id,
-                            ...rentalData,
-                            bike: bikeSnapshot.exists() ? bikeSnapshot.data() : null, // Attach bike details
-                        };
-                    })
-                );
-
-                setHistory(rentalHistory);
-            } catch (error) {
-                console.error("Error fetching rental history:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchHistoryWithBikeDetails();
     }, []);
 
-    const updateRentalStatus = async () => {
+    const fetchHistoryWithBikeDetails = async () => {
+        try {
+            const userId =  await AsyncStorage.getItem('userId');
+            console.log("userId:: "+userId)
+            const q = query(collection(db, "rental_history"), where("user_id", "==", userId));
+            const querySnapshot = await getDocs(q);
+
+            const rentalHistory = await Promise.all(
+                querySnapshot.docs.map(async (docSnapshot) => {
+                    const rentalData = docSnapshot.data();
+                    const bikeRef = doc(db, "bikes", rentalData.bike_id);
+                    const bikeSnapshot = await getDoc(bikeRef);
+
+                    return {
+                        id: docSnapshot.id,
+                        ...rentalData,
+                        bike: bikeSnapshot.exists() ? bikeSnapshot.data() : null, // Attach bike details
+                    };
+                })
+            );
+
+            setHistory(rentalHistory);
+        } catch (error) {
+            console.error("Error fetching rental history:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const updateRentalStatus = async (item) => {
         console.log('im here!!!!!!!!!!!')
+        console.log(item)
+        const rentalFeePerDay = item.bike?.rental;
+
+        const rentFrom = new Date(item.from); // Convert to Date object
+        const rentTo = new Date(); // Current Date & Time
+
+        // Calculate the difference in milliseconds
+        const timeDiff = rentTo - rentFrom;
+        const dayDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+        const totalRentalFee = dayDiff * rentalFeePerDay;
+
+        console.log(`Total Days: ${dayDiff}, Total Rental Fee: $${totalRentalFee}`);
+
+        console.log('item.bike_id:: '+item.bike_id)
+        const rentalHistoryRef = doc(db, "rental_history", item.id);
+        const bikeRef = doc(db, "bikes", item.bike_id);
+
+        // Update Firestore document
+        await updateDoc(rentalHistoryRef, {
+            status: 1,
+            fees: totalRentalFee,
+            to: new Date().toISOString().split("T").join(" ").slice(0, 19)
+        });
+
+        await updateDoc(bikeRef, {
+            status: true,
+            reserved_user_id: null
+        });
+
+        alert('Rental Complete')
+        fetchHistoryWithBikeDetails();
     }
 
     if (loading) {
@@ -55,7 +89,7 @@ const RentalHistoryScreen = () => {
                 history.map((item) => (
                     <View key={item.id} style={styles.card}>
                         <Image
-                            source={{ uri: item.image }}
+                            source={{ uri: item.bike?.image }}
                             style={styles.bikeImage}
                         />
                         <Text style={styles.bikeBrand}>{item.bike?.brand_name || "Unknown Bike"}</Text>
@@ -64,11 +98,12 @@ const RentalHistoryScreen = () => {
 
                         {item.status === 1 ? (
                             <View>
+                                <Text>Completed On: {new Date(item.to).toLocaleDateString()}</Text>
                                 <Text>Status: Completed</Text>
                                 <Text>Total Rental Fee: Rs.{item.fees}</Text>
                             </View>
                         ) : (
-                            <TouchableOpacity style={styles.button} onPress={() => updateRentalStatus(item.id)}>
+                            <TouchableOpacity style={styles.button} onPress={() => updateRentalStatus(item)}>
                                 <Text style={styles.buttonText}>Complete Rental</Text>
                             </TouchableOpacity>
                         )}
