@@ -1,8 +1,7 @@
 import React, {useState, useEffect} from 'react';
-import {View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Image} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Image, ScrollView} from 'react-native';
 import {getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc} from 'firebase/firestore';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 
 const db = getFirestore();
 
@@ -16,9 +15,16 @@ const RentalHistoryScreen = () => {
 
     const fetchHistoryWithBikeDetails = async () => {
         try {
-            const userId =  await AsyncStorage.getItem('userId');
-            console.log("userId:: "+userId)
-            const q = query(collection(db, "rental_history"), where("user_id", "==", userId));
+            const role =  await AsyncStorage.getItem('role');
+            let q;
+
+            if (role === 'user') {
+                const userId = await AsyncStorage.getItem('userId');
+                q = query(collection(db, "rental_history"), where("user_id", "==", userId));
+            } else {
+                q = query(collection(db, "rental_history"));
+            }
+
             const querySnapshot = await getDocs(q);
 
             const rentalHistory = await Promise.all(
@@ -30,7 +36,7 @@ const RentalHistoryScreen = () => {
                     return {
                         id: docSnapshot.id,
                         ...rentalData,
-                        bike: bikeSnapshot.exists() ? bikeSnapshot.data() : null, // Attach bike details
+                        bike: bikeSnapshot.exists() ? bikeSnapshot.data() : null,
                     };
                 })
             );
@@ -44,25 +50,17 @@ const RentalHistoryScreen = () => {
     };
 
     const updateRentalStatus = async (item) => {
-        console.log('im here!!!!!!!!!!!')
-        console.log(item)
         const rentalFeePerDay = item.bike?.rental;
+        const rentFrom = new Date(item.from);
+        const rentTo = new Date();
 
-        const rentFrom = new Date(item.from); // Convert to Date object
-        const rentTo = new Date(); // Current Date & Time
-
-        // Calculate the difference in milliseconds
         const timeDiff = rentTo - rentFrom;
         const dayDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
         const totalRentalFee = dayDiff * rentalFeePerDay;
 
-        console.log(`Total Days: ${dayDiff}, Total Rental Fee: $${totalRentalFee}`);
-
-        console.log('item.bike_id:: '+item.bike_id)
         const rentalHistoryRef = doc(db, "rental_history", item.id);
         const bikeRef = doc(db, "bikes", item.bike_id);
 
-        // Update Firestore document
         await updateDoc(rentalHistoryRef, {
             status: 1,
             fees: totalRentalFee,
@@ -74,33 +72,30 @@ const RentalHistoryScreen = () => {
             reserved_user_id: null
         });
 
-        alert('Rental Complete')
+        alert('Rental Complete');
         fetchHistoryWithBikeDetails();
-    }
+    };
 
     if (loading) {
-        return <ActivityIndicator size="large" color="#0000ff"/>;
+        return <ActivityIndicator size="large" color="#007bff" style={styles.loading} />;
     }
 
     return (
-        <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.title}>Rental History</Text>
             {history.length > 0 ? (
                 history.map((item) => (
                     <View key={item.id} style={styles.card}>
-                        <Image
-                            source={{ uri: item.bike?.image }}
-                            style={styles.bikeImage}
-                        />
+                        <Image source={{ uri: item.bike?.image }} style={styles.bikeImage} />
                         <Text style={styles.bikeBrand}>{item.bike?.brand_name || "Unknown Bike"}</Text>
-                        <Text>Location: {item.bike?.location || "Unknown"}</Text>
-                        <Text>Rental Date: {new Date(item.from).toLocaleDateString()}</Text>
+                        <Text style={styles.infoText}>Location: {item.bike?.location || "Unknown"}</Text>
+                        <Text style={styles.infoText}>Rental Date: {new Date(item.from).toLocaleDateString()}</Text>
 
                         {item.status === 1 ? (
                             <View>
-                                <Text>Completed On: {new Date(item.to).toLocaleDateString()}</Text>
-                                <Text>Status: Completed</Text>
-                                <Text>Total Rental Fee: Rs.{item.fees}</Text>
+                                <Text style={styles.infoText}>Completed On: {new Date(item.to).toLocaleDateString()}</Text>
+                                <Text style={styles.infoText}>Status: <Text style={styles.completedText}>Completed</Text></Text>
+                                <Text style={styles.infoText}>Total Rental Fee: Rs.{item.fees}</Text>
                             </View>
                         ) : (
                             <TouchableOpacity style={styles.button} onPress={() => updateRentalStatus(item)}>
@@ -110,50 +105,77 @@ const RentalHistoryScreen = () => {
                     </View>
                 ))
             ) : (
-                <Text>No rental history found.</Text>
+                <Text style={styles.noHistoryText}>No rental history found.</Text>
             )}
-        </View>
+        </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
-    button: {
-        backgroundColor: "#007bff", // Blue button
-        paddingVertical: 6,
-        borderRadius: 8,
-        alignItems: "center",
-        marginBottom: 10,
-        marginTop: 10,
-    },
     container: {
-        flex: 1,
         padding: 16,
-        backgroundColor: '#f0f0f0',
+        backgroundColor: '#e0f7fa',
     },
     title: {
-        fontSize: 20,
+        fontSize: 22,
         fontWeight: 'bold',
-        marginBottom: 10,
+        textAlign: 'center',
+        marginBottom: 15,
+        color: '#007bff',
     },
     card: {
-        backgroundColor: '#fff',
+        backgroundColor: '#ffffff',
         padding: 16,
-        borderRadius: 8,
-        marginBottom: 10,
+        borderRadius: 10,
+        marginBottom: 15,
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
         shadowRadius: 4,
-        elevation: 3,
+        elevation: 5,
+    },
+    bikeImage: {
+        width: '100%',
+        height: 150,
+        borderRadius: 10,
+        marginBottom: 10,
     },
     bikeBrand: {
         fontSize: 18,
         fontWeight: 'bold',
+        marginBottom: 5,
+        color: '#333',
+    },
+    infoText: {
+        fontSize: 14,
+        color: '#555',
+        marginBottom: 3,
+    },
+    completedText: {
+        fontWeight: 'bold',
+        color: 'green',
+    },
+    button: {
+        backgroundColor: '#007bff',
+        paddingVertical: 10,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 10,
     },
     buttonText: {
-        color: "white",
+        color: 'white',
         fontSize: 16,
-        fontWeight: "bold",
+        fontWeight: 'bold',
+    },
+    noHistoryText: {
+        textAlign: 'center',
+        fontSize: 16,
+        color: '#555',
+        marginTop: 20,
+    },
+    loading: {
+        flex: 1,
+        justifyContent: 'center',
     },
 });
 

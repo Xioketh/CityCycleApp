@@ -1,8 +1,9 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import {getFirestore} from "firebase/firestore";
+import { getStorage } from 'firebase/storage';
 
-const firebaseConfig = {
+export const firebaseConfig = {
     apiKey: "AIzaSyAR3QPn6SEluin3xDdQ6fUhhEKGq2u1KHs",
     authDomain: "citycycleapp-87682.firebaseapp.com",
     projectId: "citycycleapp-87682",
@@ -16,5 +17,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 export const db = getFirestore(app);
+const storage = getStorage(app);
 
-export { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword };
+export { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, storage };

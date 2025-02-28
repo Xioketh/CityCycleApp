@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet, Alert } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PersonalInfoScreen = ({ navigation }) => {
@@ -55,7 +55,9 @@ const PersonalInfoScreen = ({ navigation }) => {
             <Text style={styles.label}>Phone:</Text>
             <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Enter Phone" keyboardType="phone-pad" />
 
-            <Button title="Update Info" onPress={handleUpdate} />
+            {/*<TouchableOpacity style={styles.button} onPress={handleUpdate}>*/}
+            {/*    <Text style={styles.buttonText}>Update Info</Text>*/}
+            {/*</TouchableOpacity>*/}
         </View>
     );
 };
@@ -65,32 +67,50 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         padding: 20,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#f0f0f0',
     },
     heading: {
-        fontSize: 24,
+        fontSize: 26,
         fontWeight: 'bold',
         marginBottom: 20,
         textAlign: 'center',
+        color: '#333',
     },
     label: {
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '600',
         marginTop: 10,
+        color: '#555',
     },
     value: {
         fontSize: 16,
         marginBottom: 10,
-        color: '#333',
+        color: '#222',
+        backgroundColor: '#e0e0e0',
+        padding: 10,
+        borderRadius: 5,
     },
     input: {
-        height: 40,
+        height: 50,
         borderColor: '#ccc',
         borderWidth: 1,
-        borderRadius: 5,
-        marginBottom: 10,
-        paddingLeft: 10,
+        borderRadius: 10,
+        marginBottom: 12,
+        paddingLeft: 15,
         backgroundColor: '#fff',
+        fontSize: 16,
+    },
+    button: {
+        backgroundColor: '#007bff',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
 });
 

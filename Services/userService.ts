@@ -4,13 +4,14 @@ import { collection, doc, setDoc, getDoc } from "firebase/firestore";
 const usersCollection = collection(db, "users");
 
 // Function to add a user to Firestore
-export const addUserToFirestore = async (userId: string, email: string, name: string, phone: string) => {
+export const addUserToFirestore = async (userId: string, email: string, name: string, phone: string, role:string) => {
     try {
         await setDoc(doc(usersCollection, userId), {
             userId,
             email,
             name,
-            phone
+            phone,
+            role
         });
         console.log("User added to Firestore!");
     } catch (error) {

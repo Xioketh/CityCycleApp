@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {View, Button, Text, FlatList, StyleSheet, Image, ActivityIndicator} from 'react-native';
-import { collection, getDocs, getFirestore, doc, updateDoc, addDoc } from "firebase/firestore";
-import asyncStorage from "@react-native-async-storage/async-storage/src/AsyncStorage";
-// import Toast from "react-native-toast-message";
+import { View, Text, FlatList, StyleSheet, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { collection, getDocs, getFirestore, doc, updateDoc, addDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const db = getFirestore(); // Initialize Firestore
+const db = getFirestore();
 
 const ReserveBikeScreen = () => {
     const [bikes, setBikes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [reservedBike, setReservedBike] = useState(null);
-    let [user_role, setUser_role] = useState(null);
-
+    const [userRole, setUserRole] = useState('');
+    const [user_id, setUser_id] = useState('');
 
     useEffect(() => {
         fetchBikes();
@@ -19,20 +18,22 @@ const ReserveBikeScreen = () => {
 
     const fetchBikes = async () => {
         try {
-            user_role = await asyncStorage.getItem('role')
+            const role = await AsyncStorage.getItem('role');
+            const uid = await AsyncStorage.getItem('userId');
+            if (role) {
+                setUserRole(role);
+                setUser_id(uid);
+            }
 
-            console.log('user_role:: '+user_role)
-            console.log("Fetching bikes from Firestore...");
-            const querySnapshot = await getDocs(collection(db, "bikes"));
+            const querySnapshot = await getDocs(collection(db, 'bikes'));
             const bikeList = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
 
             setBikes(bikeList);
-            console.log("Bikes fetched successfully!");
         } catch (error) {
-            console.error("Error fetching bikes:", error);
+            console.error('Error fetching bikes:', error);
         } finally {
             setLoading(false);
         }
@@ -40,69 +41,55 @@ const ReserveBikeScreen = () => {
 
     const handleReserve = async (bikeId) => {
         try {
-            // Reference to the bike document
-            const bikeRef = doc(db, "bikes", bikeId);
-
-            const user_id = await asyncStorage.getItem('userId')
-            // Update Firestore document
+            const bikeRef = doc(db, 'bikes', bikeId);
             await updateDoc(bikeRef, {
                 status: false,
-                reserved_user_id: user_id
+                reserved_user_id: user_id,
             });
 
-            await addDoc(collection(db,"rental_history"),{
-                bike_id:bikeId,
-                from: new Date().toISOString().split("T").join(" ").slice(0, 19),
+            await addDoc(collection(db, 'rental_history'), {
+                bike_id: bikeId,
+                from: new Date().toISOString().split('T').join(' ').slice(0, 19),
                 status: 0,
-                to:null,
+                fees: 0,
+                to: null,
                 user_id: user_id,
-            })
+            });
 
-            // Set reserved bike state
             setReservedBike(bikeId);
-            console.log(`Bike with ID ${bikeId} reserved!`);
-            alert('Reserved Bike!')
-            // Toast.show({
-            //     type: 'success',
-            //     text1: 'Bike Reserved!',
-            //     text2: `Bike has  been reserved successfully.`,
-            // });
+            alert('Bike Reserved Successfully!');
             fetchBikes();
         } catch (error) {
-            console.error("Error reserving bike:", error);
+            console.error('Error reserving bike:', error);
         }
     };
 
     const renderBikeItem = ({ item }) => (
-        <View style={styles.bikeCard}>  {/* Changed to bikeCard */}
-            <Image
-                source={{ uri: item.image }}
-                style={styles.bikeImage}
-            />
+        <View style={styles.bikeCard}>
+            <Image source={{ uri: item.image }} style={styles.bikeImage} />
             <View style={styles.bikeDetails}>
                 <Text style={styles.bikeBrand}>{item.brand_name}</Text>
-                <Text>{item.location}</Text>
-                <Text>Per Day: Rs.{item.rental}</Text>
-                <Text>Status: {item.status  ? "Available" : "Reserved"}</Text>
+                <Text style={styles.bikeLocation}>{item.location}</Text>
+                <Text style={styles.bikePrice}>Per Day: Rs.{item.rental}</Text>
+                <Text style={styles.bikeStatus}>Status: {item.status ? 'Available' : 'Reserved'}</Text>
             </View>
-
-            {user_role === 'user' ? (
-                <Button
-                    title={item.status ? "Reserve" : "Reserved"} // More descriptive button text
-                    onPress={() => handleReserve(item.id, item.rental)}
-                    disabled={!item.status} // Disable if reserved
-                />
-            ):null}
-
-
+            {userRole === 'user' && (
+                <TouchableOpacity
+                    style={[styles.reserveButton, !item.status && styles.buttonDisabled]}
+                    onPress={() => handleReserve(item.id)}
+                    disabled={!item.status}
+                >
+                    <Text style={styles.buttonText}>{item.status ? 'Reserve' : 'Reserved'}</Text>
+                </TouchableOpacity>
+            )}
         </View>
     );
 
     if (loading) {
-        return <ActivityIndicator size="large" color="#0000ff"/>;
+        return <ActivityIndicator size="large" color="#007BFF" style={styles.loader} />;
     }
 
-    if (!bikes.length) return <Text>No bikes available.</Text>;
+    if (!bikes.length) return <Text style={styles.noBikesText}>No bikes available.</Text>;
 
     return (
         <View style={styles.container}>
@@ -110,8 +97,8 @@ const ReserveBikeScreen = () => {
                 data={bikes}
                 renderItem={renderBikeItem}
                 keyExtractor={(item) => item.id}
-                numColumns={2} // Display bikes in two columns
-                columnWrapperStyle={styles.columnWrapper} // Style the rows
+                numColumns={2}
+                columnWrapperStyle={styles.columnWrapper}
             />
         </View>
     );
@@ -121,39 +108,75 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 16,
-        backgroundColor: '#f0f0f0', // Light background color
+        backgroundColor: '#f8f9fa',
     },
-    columnWrapper: { // Style for the rows
+    columnWrapper: {
+        justifyContent: 'space-between',
+    },
+    bikeCard: {
         flex: 1,
-        justifyContent: 'space-around', // Space items evenly in the row
-        marginVertical: 8, // Add some vertical margin between rows
-    },
-    bikeCard: {  // Card-like styling
-        flex: 1, // Important for two columns
         backgroundColor: 'white',
-        borderRadius: 8,
+        borderRadius: 10,
         padding: 16,
-        margin: 8, // Margin between cards
-        elevation: 3, // Shadow for Android
-        shadowColor: '#000', // Shadow for iOS
+        margin: 8,
+        elevation: 5,
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 4,
     },
     bikeImage: {
-        width: '100%', // Image takes full width of the card
-        height: 150,
-        resizeMode: 'cover', // Or 'contain' as needed
-        marginBottom: 8,
-        borderRadius: 8, // Image border radius
+        width: '100%',
+        height: 140,
+        borderRadius: 8,
+        marginBottom: 10,
     },
-    bikeDetails: { // Style for the text details
-        marginBottom: 8,
+    bikeDetails: {
+        marginBottom: 10,
     },
-    bikeBrand: {  // Style the brand name
+    bikeBrand: {
         fontSize: 18,
         fontWeight: 'bold',
-        marginBottom: 4,
+        color: '#333',
+    },
+    bikeLocation: {
+        fontSize: 14,
+        color: '#666',
+    },
+    bikePrice: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#007BFF',
+    },
+    bikeStatus: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#28a745',
+    },
+    reserveButton: {
+        backgroundColor: '#007BFF',
+        paddingVertical: 10,
+        borderRadius: 5,
+        alignItems: 'center',
+    },
+    buttonDisabled: {
+        backgroundColor: '#ccc',
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    loader: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    noBikesText: {
+        textAlign: 'center',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginTop: 20,
     },
 });
 
