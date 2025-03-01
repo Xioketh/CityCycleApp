@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { collection, getDocs, getFirestore, doc, updateDoc, addDoc } from 'firebase/firestore';
+import React, {useState, useEffect} from 'react';
+import {View, Text, FlatList, StyleSheet, Image, ActivityIndicator, TouchableOpacity} from 'react-native';
+import {collection, getDocs, getFirestore, doc, updateDoc, addDoc} from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from "react-native-toast-message";
 
 const db = getFirestore();
 
 const ReserveBikeScreen = () => {
+
     const [bikes, setBikes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [reserving, setReserving] = useState(false);
     const [reservedBike, setReservedBike] = useState(null);
     const [userRole, setUserRole] = useState('');
     const [user_id, setUser_id] = useState('');
@@ -41,6 +44,7 @@ const ReserveBikeScreen = () => {
 
     const handleReserve = async (bikeId) => {
         try {
+            setReserving(true);
             const bikeRef = doc(db, 'bikes', bikeId);
             await updateDoc(bikeRef, {
                 status: false,
@@ -57,48 +61,58 @@ const ReserveBikeScreen = () => {
             });
 
             setReservedBike(bikeId);
-            alert('Bike Reserved Successfully!');
+            Toast.show({
+                type: "success",
+                text1: "You have successfully reserved this bike.",
+                text2: "",
+                position: "top",
+            });
             fetchBikes();
         } catch (error) {
             console.error('Error reserving bike:', error);
+        } finally {
+            setReserving(false);
         }
     };
 
-    const renderBikeItem = ({ item }) => (
-        <View style={styles.bikeCard}>
-            <Image source={{ uri: item.image }} style={styles.bikeImage} />
-            <View style={styles.bikeDetails}>
+    const renderBikeItem = ({item}) => (
+        <View style={styles.container}>
+            <View style={styles.card}>
+                <Image source={{uri: item.image}} style={styles.bikeImage}/>
                 <Text style={styles.bikeBrand}>{item.brand_name}</Text>
-                <Text style={styles.bikeLocation}>{item.location}</Text>
+                <Text style={styles.bikeLocation}>Location: {item.location}</Text>
                 <Text style={styles.bikePrice}>Per Day: Rs.{item.rental}</Text>
-                <Text style={styles.bikeStatus}>Status: {item.status ? 'Available' : 'Reserved'}</Text>
+                {item.status ? (
+                    <Text style={styles.bikeStatus}>Available</Text>
+                ) : (
+                    <Text style={styles.unavailableText}>Reserved</Text>
+                )}
+                {userRole === 'user' && (
+                    <TouchableOpacity
+                        style={[styles.reserveButton, !item.status && styles.buttonDisabled]}
+                        onPress={() => handleReserve(item.id)}
+                        disabled={!item.status || reserving}
+                    >
+                        <Text style={styles.buttonText}>{item.status ? 'Reserve' : 'Reserved'}</Text>
+                    </TouchableOpacity>
+                )}
             </View>
-            {userRole === 'user' && (
-                <TouchableOpacity
-                    style={[styles.reserveButton, !item.status && styles.buttonDisabled]}
-                    onPress={() => handleReserve(item.id)}
-                    disabled={!item.status}
-                >
-                    <Text style={styles.buttonText}>{item.status ? 'Reserve' : 'Reserved'}</Text>
-                </TouchableOpacity>
-            )}
         </View>
     );
 
     if (loading) {
-        return <ActivityIndicator size="large" color="#007BFF" style={styles.loader} />;
+        return <ActivityIndicator size="large" color="#007BFF" style={styles.loader}/>;
     }
 
     if (!bikes.length) return <Text style={styles.noBikesText}>No bikes available.</Text>;
 
     return (
         <View style={styles.container}>
+            <Text style={styles.title}>Available Bikes</Text>
             <FlatList
                 data={bikes}
                 renderItem={renderBikeItem}
                 keyExtractor={(item) => item.id}
-                numColumns={2}
-                columnWrapperStyle={styles.columnWrapper}
             />
         </View>
     );
@@ -106,52 +120,61 @@ const ReserveBikeScreen = () => {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
         padding: 16,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#e0f7fa',
+        flex: 1,
     },
-    columnWrapper: {
-        justifyContent: 'space-between',
+    title: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 15,
+        color: '#007bff',
+    },
+    card: {
+        backgroundColor: '#ffffff',
+        padding: 16,
+        borderRadius: 10,
+        marginBottom: 15,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 3},
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 5,
     },
     bikeCard: {
-        flex: 1,
         backgroundColor: 'white',
         borderRadius: 10,
         padding: 16,
-        margin: 8,
+        marginVertical: 8, // Added vertical margin
         elevation: 5,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.2,
         shadowRadius: 4,
     },
     bikeImage: {
         width: '100%',
-        height: 140,
+        height: 180, // Increased height for better view
         borderRadius: 8,
-        marginBottom: 10,
-    },
-    bikeDetails: {
         marginBottom: 10,
     },
     bikeBrand: {
         fontSize: 18,
         fontWeight: 'bold',
         color: '#333',
+        marginBottom: 5,
     },
     bikeLocation: {
         fontSize: 14,
         color: '#666',
+        marginBottom: 3,
     },
     bikePrice: {
         fontSize: 16,
         fontWeight: '600',
         color: '#007BFF',
-    },
-    bikeStatus: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#28a745',
+        marginBottom: 3,
     },
     reserveButton: {
         backgroundColor: '#007BFF',
@@ -177,6 +200,18 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         marginTop: 20,
+    },
+    unavailableText: {
+        fontSize: 14,
+        color: 'red',
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    bikeStatus: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#28a745',
+        marginBottom: 10,
     },
 });
 

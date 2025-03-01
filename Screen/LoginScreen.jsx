@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import { View, TextInput, Text, StyleSheet, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, signInWithEmailAndPassword } from '../Config/firebaseConfig';
 import { getUserFromFirestore } from "../Services/userService";
+import Toast from 'react-native-toast-message';
+
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        navigation.setOptions({ gestureEnabled: false }); // Disable swipe gestures
+    }, [navigation]);
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -31,7 +37,13 @@ const LoginScreen = ({ navigation }) => {
 
             navigation.navigate('Home');
         } catch (error) {
-            Alert.alert('Login Failed', error.message);
+            // Alert.alert('Login Failed', error.message);
+            Toast.show({
+                type: "error",
+                text1: "Login Failed",
+                text2: error.message,
+                position: "bottom",
+            });
         } finally {
             setLoading(false);
         }

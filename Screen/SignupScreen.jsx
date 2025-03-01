@@ -1,8 +1,19 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import {
+    View,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    StyleSheet,
+    KeyboardAvoidingView,
+    Platform,
+    ActivityIndicator
+} from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../Config/firebaseConfig";
 import {addUserToFirestore} from "../Services/userService";
+import Toast from 'react-native-toast-message';
+
 
 const SignupScreen = ({ navigation }) => {
     const [email, setEmail] = useState("");
@@ -10,23 +21,52 @@ const SignupScreen = ({ navigation }) => {
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [role, setRole] = useState("");
+    const [loading, setLoading] = useState(false);
+
 
     const handleRegister = async () => {
+        // Basic validation checks
+        if (!name.trim()) {
+            Toast.show({ type: "error", text1: "Validation Error", text2: "Name is required!", position: "top" });
+            return;
+        }
+
+        if (!phone.trim() || !/^\d{10}$/.test(phone)) {
+            Toast.show({ type: "error", text1: "Validation Error", text2: "Phone number must be exactly 10 digits!", position: "top" });
+            return;
+        }
+
+        if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            Toast.show({ type: "error", text1: "Validation Error", text2: "Enter a valid email address!", position: "top" });
+            return;
+        }
+
+        if (!password.trim() || password.length < 6) {
+            Toast.show({ type: "error", text1: "Validation Error", text2: "Password must be at least 6 characters long!", position: "top" });
+            return;
+        }
+
         try {
-            // Create user with Firebase Authentication
+            setLoading(true);
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-
-            // Save user in Firestore
             await addUserToFirestore(user.uid, email, name, phone, 'user');
 
-            alert("Registration Successful!");
-            navigation.navigate("Login"); // Navigate to Login screen
+            Toast.show({
+                type: "success",
+                text1: "Registration Successful!",
+                text2: "Please Login to continue",
+                position: "top",
+            });
+            navigation.navigate("Login");
         } catch (error) {
-            alert(error.message);
+            Toast.show({ type: "error", text1: "Registration Failed!", text2: error.message, position: "bottom" });
+        } finally {
+            setLoading(false);
         }
     };
+
 
     return (
         <KeyboardAvoidingView
@@ -64,8 +104,8 @@ const SignupScreen = ({ navigation }) => {
                     secureTextEntry
                 />
 
-                <TouchableOpacity style={styles.button} onPress={handleRegister}>
-                    <Text style={styles.buttonText}>Register</Text>
+                <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+                    {loading ? <ActivityIndicator color="white" /> :<Text style={styles.buttonText}>Register</Text>}
                 </TouchableOpacity>
 
                 <TouchableOpacity

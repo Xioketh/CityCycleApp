@@ -13,7 +13,6 @@ export const addUserToFirestore = async (userId: string, email: string, name: st
             phone,
             role
         });
-        console.log("User added to Firestore!");
     } catch (error) {
         console.error("Error adding user: ", error);
         throw error;

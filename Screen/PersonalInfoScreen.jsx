@@ -47,13 +47,16 @@ const PersonalInfoScreen = ({ navigation }) => {
             <Text style={styles.value}>{userId || 'Not Available'}</Text>
 
             <Text style={styles.label}>Name:</Text>
-            <TextInput style={styles.input} value={userName} onChangeText={setUserName} placeholder="Enter Name" />
+            <Text style={styles.value}>{userName || 'Not Available'}</Text>
+            {/*<TextInput style={styles.input} value={userName} onChangeText={setUserName} placeholder="Enter Name" />*/}
 
             <Text style={styles.label}>Email:</Text>
-            <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Enter Email" keyboardType="email-address" />
+            <Text style={styles.value}>{email || 'Not Available'}</Text>
+            {/*<TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Enter Email" keyboardType="email-address" />*/}
 
             <Text style={styles.label}>Phone:</Text>
-            <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Enter Phone" keyboardType="phone-pad" />
+            <Text style={styles.value}>{phone || 'Not Available'}</Text>
+            {/*<TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Enter Phone" keyboardType="phone-pad" />*/}
 
             {/*<TouchableOpacity style={styles.button} onPress={handleUpdate}>*/}
             {/*    <Text style={styles.buttonText}>Update Info</Text>*/}

@@ -26,7 +26,7 @@ const HomeScreen = ({ navigation }) => {
 
                 {userRole === 'admin' && (
                     <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Add-Bike')}>
-                        <Text style={styles.buttonText}>+ Add a Bike</Text>
+                        <Text style={styles.buttonText}>+ Add Bike</Text>
                     </TouchableOpacity>
                 )}
 
@@ -48,9 +48,9 @@ const HomeScreen = ({ navigation }) => {
                     <Text style={styles.buttonText}>Log Out</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.logOutButton} onPress={() => navigation.navigate('image')}>
-                    <Text style={styles.buttonText}>im</Text>
-                </TouchableOpacity>
+                {/*<TouchableOpacity style={styles.logOutButton} onPress={() => navigation.navigate('image')}>*/}
+                {/*    <Text style={styles.buttonText}>im</Text>*/}
+                {/*</TouchableOpacity>*/}
             </View>
         </ImageBackground>
     );
